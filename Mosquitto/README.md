@@ -57,3 +57,8 @@ mosquitto_sub -h 192.168.43.75 -t test # ip of Brocker
 
 - Save all these details
 - Now we have enter topic name: test
+
+
+### For More info 
+[mosquitto_Auth](https://mosquitto.org/documentation/authentication-methods/)
+
