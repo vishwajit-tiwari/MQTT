@@ -11,12 +11,13 @@
 
 ```bash
 sudo apt install mosquitto
-sudo apt-get install mosquitto-clients 
+sudo apt-get install mosquitto-clients # Optional
 ```
 - Start the brocker
 
 ```bash 
 sudo systemctl enable mosquitto.services
+mosquitto -c user_file.txt -v 
 ```
 
 ### 2. MQTT Publisher
