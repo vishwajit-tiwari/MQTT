@@ -1,3 +1,14 @@
+/**
+ * @file mosquitto_Device.ino
+ * @author Vishwajit Kuamr Tiwari (tvishwajit@cdac.in)
+ * @brief MQTT (Mosquitto Broker) to control & monitor Appliences  
+ * @version 0.1
+ * @date 2022-07-23
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "ThingSpeak.h"
 #include "WiFi.h"
 #include <PubSubClient.h>
@@ -6,10 +17,11 @@
 /*******************DEFINES************************/
 #define DEBUG
 #define LED_Pin 23
+#define LM35_Temp 39   /*Analog pin*/
 /**************************************************/
 
 /*********** Enter you Wi-Fi Details **************/
-char ssid[] = "your SSID"; //SSID
+char ssid[] = "your Hotspot name"; //SSID
 char pass[] = "Password"; // Password
 /**************************************************/
 
@@ -17,11 +29,11 @@ char pass[] = "Password"; // Password
 
 /*The input pin the LDR is connected to. Must be an analogue pin
   (i.e. pins A0-A5 on Arduino UNO).*/
-const byte ldrPin = A0;
+const byte ldrPin = 2;//A0;
 
 /*This digital pin will be driven low to release a lock when puzzle solved
 can be any pin capable of digital output*/ 
-const byte lockPin = A1; //D2;
+const byte lockPin = 22;//A1; //D2;
 
 /*The base reading is the resistance of the LDR measure
 in normal lighting of the room, and will be calibrated
@@ -43,7 +55,7 @@ const int sensitivity = 30;
 enum PuzzleState {Initialising, Running, Solved};
 PuzzleState puzzleState = Initialising;
 
-/*Returns true if puzzle the puzzle has been solved,
+/*Returns true if the puzzle has been solved,
 false otherwise*/
 bool checkIfPuzzleSolved() {
   return (currentReading > baseReading + sensitivity);
@@ -70,7 +82,7 @@ const byte mac[] = {0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED};
 /* Unique ip address to assign to this decive (if DHCP fails)*/
 const IPAddress deviceIP(192,168,1,100);
 /*IP Address of machine on the network running the MQTT broker*/
-const IPAddress mqttServerIP(192,168,253,5);
+const IPAddress mqttServerIP(192,168,7,5);
 /*Unique name of this device, used as client ID to connect to MQTT server*/
 /*and also topic name for messages published to this device */
 const char* deviceID = "Arduino";
@@ -118,13 +130,13 @@ void wifiSetup(void)
         {
             WiFi.begin(ssid, pass);
             Serial.print(".");
-            delay(500);
+            delay(5000);
         }
         /*Give the WiFi a couple of seconds to initialize*/
         delay(2000);
 
         /*Print debug info about the connection*/
-        Serial.print("Connected! IP address: ");
+        Serial.print("Connected!\nIP address: ");
         Serial.println(WiFi.localIP());
     }
 }
@@ -134,24 +146,24 @@ void wifiSetup(void)
 /****************************Ethernet Setup*******************************/
 void ethernetSetup() 
 {
-  if(!Serial) 
-  {
-    /*Start the serial connection*/
-    Serial.begin(115200);
-  }
-  /*Attempting to connect to the specified network*/
-  Serial.print("Connecting to network");
-  /*First, try to create a conncetion using DHCP */
+//  if(!Serial) 
+//  {
+//    /*Start the serial connection*/
+//    Serial.begin(115200);
+//  }
+//  /*Attempting to connect to the specified network*/
+//  Serial.print("Connecting to network ");
+//  /*First, try to create a conncetion using DHCP */
 //  if(Ethernet.begin(mac) == 0) 
 //  {
 //    /*Try to connect using speified IP address instead of DHCP*/
 //    Ethernet.begin(mac,deviceIP);
 //  }
-  /*Give the Ethernet sheild a couple of seconds to initialize*/
-  delay(2000);
-  /*Print debug info about the conncetion*/
-  Serial.print("Connceted! IP address: ");
-  Serial.println(Ethernet.localIP());  
+//  /*Give the Ethernet sheild a couple of seconds to initialize*/
+//  delay(2000);
+//  /*Print debug info about the conncetion*/
+//  Serial.print("Connceted! IP address: ");
+//  Serial.println(Ethernet.localIP());  
 }
 /************************************************************************/
 
@@ -186,6 +198,9 @@ void setup()
   pinMode(lockPin,OUTPUT);
   digitalWrite(lockPin,HIGH);
 
+  /*Set the Temperature as input*/
+  pinMode(LM35_Temp,INPUT);
+
   /*Setup the Ethernet network connection*/
   ethernetSetup();
 
@@ -205,15 +220,27 @@ void setup()
 /************************Void Loop Function*****************************/
 void loop()
 {
+  wifiSetup();
   /*Take the current measurement from the sensor
   when the sensor is covered, this value rises. 
   when it receives more light, it falls.*/
-  currentReading = analogRead(ldrPin);
+//  currentReading = analogRead(ldrPin);
+  /*Log the output on the serial terminal if debugging enabled*/
+//  #ifdef DEBUG
+//  Serial.print("LDR Sensor Data = ");
+//  Serial.println(currentReading);
+//  delay(500);
+//  #endif
+
+  currentReading = analogRead(LM35_Temp);
   /*Log the output on the serial terminal if debugging enabled*/
   #ifdef DEBUG
+  Serial.print("Temp = ");
   Serial.println(currentReading);
-  delay(250);
+  delay(1000);
   #endif
+
+  publish_dashboard(currentReading);
 
   /*Switch action based on the current state of the puzzle*/
   switch(puzzleState) {
@@ -257,7 +284,7 @@ void calibrate()
   int total = 0;
   for(int i =0; i<numSamples; i++){
     delay(100);
-    total += analogRead(ldrPin);
+    total += analogRead(/*ldrPin*/LM35_Temp);
   }
   baseReading = total / numSamples;
 
@@ -322,6 +349,11 @@ void mqttLoop()
         snprintf(msg, 64, "CONNECT", deviceID);
         MQTTclient.publish(topic, msg);
 
+        /*Once connceted, publish an announcement to the ToHost/#deviceID# topic */
+        snprintf(topic, 32, "fromPub/%s",deviceID);
+        snprintf(msg, 64, "ToDashBoard", deviceID);
+        MQTTclient.publish(topic, msg);
+
         /*Subscribe to topics meant for this device*/
         snprintf(topic, 32, "ToDevice/%s", deviceID);
         MQTTclient.subscribe(topic);
@@ -350,6 +382,16 @@ void publish(char* message)
 {
   snprintf(topic, 32, "ToHost/%s", deviceID);
   MQTTclient.publish(topic,message);
+}
+/***********************************************************************/
+
+/***************************MQTT Publish function***********************/
+void publish_dashboard(int currentReading)
+{
+  char buff[64];
+  sprintf(buff, "%d", currentReading);
+  snprintf(topic, 32, "fromPub/%s", deviceID);
+  MQTTclient.publish(topic,buff);
 }
 /***********************************************************************/
 
@@ -416,6 +458,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
       Serial.print(topic);
       Serial.print("] ");
       Serial.print(msg);
+      Serial.println(" ");
 
       /*Act upon the message received*/
       if(strcmp(msg, "SOLVE") == 0) {
@@ -423,6 +466,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
       }
       else if(strcmp(msg,"RESET") == 0) {
         onReset();
-      }   
+      }
+
+      /*For Bulb Control*/
+      if(strcmp(msg,"BulbOFF") == 0) {
+        digitalWrite(LED_Pin,LOW);
+      }
+      if(strcmp(msg,"BulbON") == 0) {
+        digitalWrite(LED_Pin,HIGH);
+      }
 }
 /********************************************************************************/
