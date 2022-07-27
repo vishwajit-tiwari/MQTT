@@ -17,12 +17,13 @@
 /*******************DEFINES************************/
 #define DEBUG
 #define LED_Pin 23
-#define LM35_Temp 39   /*Analog pin*/
+#define Buzzer 21
+#define  LM35_Temp 39  /*Analog pin*/
 /**************************************************/
 
 /*********** Enter you Wi-Fi Details **************/
-char ssid[] = "your Hotspot name"; //SSID
-char pass[] = "Password"; // Password
+char ssid[] = "Nord2"; //SSID
+char pass[] = "nikesh@1235"; // Password
 /**************************************************/
 
 /*******************************Constants***********************************/
@@ -31,9 +32,14 @@ char pass[] = "Password"; // Password
   (i.e. pins A0-A5 on Arduino UNO).*/
 const byte ldrPin = 2;//A0;
 
+/*LM35 Temperature Sensor Varialbes*/
+float temp_celsius = 0;
+float sensorValue = 0;
+float sensorVoltage = 0;
+
 /*This digital pin will be driven low to release a lock when puzzle solved
 can be any pin capable of digital output*/ 
-const byte lockPin = 22;//A1; //D2;
+const byte lockPin = A1; //D2;
 
 /*The base reading is the resistance of the LDR measure
 in normal lighting of the room, and will be calibrated
@@ -82,7 +88,7 @@ const byte mac[] = {0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED};
 /* Unique ip address to assign to this decive (if DHCP fails)*/
 const IPAddress deviceIP(192,168,1,100);
 /*IP Address of machine on the network running the MQTT broker*/
-const IPAddress mqttServerIP(192,168,7,5);
+const IPAddress mqttServerIP(192,168,66,5);
 /*Unique name of this device, used as client ID to connect to MQTT server*/
 /*and also topic name for messages published to this device */
 const char* deviceID = "Arduino";
@@ -194,6 +200,9 @@ void setup()
   /*Setup the LED Pin*/
   pinMode(LED_Pin,OUTPUT);
 
+  /*Set Buzzer Pin*/
+  pinMode(Buzzer,OUTPUT);
+
   /*Set the lock pin as output and secure the lock*/
   pinMode(lockPin,OUTPUT);
   digitalWrite(lockPin,HIGH);
@@ -232,15 +241,17 @@ void loop()
 //  delay(500);
 //  #endif
 
-  currentReading = analogRead(LM35_Temp);
+  sensorVoltage = analogRead(LM35_Temp);  
+  temp_celsius = sensorVoltage/10;  
   /*Log the output on the serial terminal if debugging enabled*/
   #ifdef DEBUG
   Serial.print("Temp = ");
-  Serial.println(currentReading);
-  delay(1000);
+  Serial.println(temp_celsius);
+  delay(2000);
   #endif
 
-  publish_dashboard(currentReading);
+  /*Publish the Temp data to Subscriber*/
+  publish_dashboard(temp_celsius);
 
   /*Switch action based on the current state of the puzzle*/
   switch(puzzleState) {
@@ -280,19 +291,19 @@ void loop()
 void calibrate() 
 {
   /*Calculate a mean average reading over 10 samples*/
-  int numSamples = 10;
-  int total = 0;
-  for(int i =0; i<numSamples; i++){
-    delay(100);
-    total += analogRead(/*ldrPin*/LM35_Temp);
-  }
-  baseReading = total / numSamples;
+//  int numSamples = 10;
+//  int total = 0;
+//  for(int i =0; i<numSamples; i++){
+//    delay(100);
+//    total += analogRead(/*ldrPin*/LM35_Temp);
+//  }
+//  baseReading = total / numSamples;
 
   /*Print debug information to the serial connection*/
-  #ifdef DEBUG
-  Serial.print("Sensor Initialised at base lavel: ");
-  Serial.println(baseReading);
-  #endif
+//  #ifdef DEBUG
+//  Serial.print("Sensor Initialised at base lavel: ");
+//  Serial.println(baseReading);
+//  #endif
 }
 /***********************************************************************/
 
@@ -344,12 +355,14 @@ void mqttLoop()
         /*Debug info*/
         Serial.println("Connected to MQTT broker");
 
-        /*Once connceted, publish an announcement to the ToHost/#deviceID# topic */
+        /*Publish an announcement to the Host / Broker, 
+        topic: ToHost/Arduino*/
         snprintf(topic, 32, "ToHost/%s",deviceID);
         snprintf(msg, 64, "CONNECT", deviceID);
         MQTTclient.publish(topic, msg);
 
-        /*Once connceted, publish an announcement to the ToHost/#deviceID# topic */
+        /*Publish from Arduino to the MQTT-DashBoard,
+        topic: fromPub/Arduino*/
         snprintf(topic, 32, "fromPub/%s",deviceID);
         snprintf(msg, 64, "ToDashBoard", deviceID);
         MQTTclient.publish(topic, msg);
@@ -360,6 +373,9 @@ void mqttLoop()
 
         /*Subscribe to topics meant for all devices*/
         MQTTclient.subscribe("ToDevice/All");
+
+        /*Subscribe to topic meant for Buzzer*/
+        MQTTclient.subscribe("Arduino/Buzzer");
       }
       else
       {
@@ -386,10 +402,10 @@ void publish(char* message)
 /***********************************************************************/
 
 /***************************MQTT Publish function***********************/
-void publish_dashboard(int currentReading)
+void publish_dashboard(float temp_celsius)
 {
   char buff[64];
-  sprintf(buff, "%d", currentReading);
+  sprintf(buff, "%.2f", temp_celsius);
   snprintf(topic, 32, "fromPub/%s", deviceID);
   MQTTclient.publish(topic,buff);
 }
@@ -398,31 +414,31 @@ void publish_dashboard(int currentReading)
 
 /**************************onUnsolved Function*****************************/
 void onUnsolve() {
- #ifdef DEBUG
-    Serial.println("Puzzle has just become unsolved!");
- #endif
+// #ifdef DEBUG
+//    Serial.println("Puzzle has just become unsolved!");
+// #endif
 
   /*Lock the lock again*/
-  digitalWrite(lockPin, HIGH);
+//  digitalWrite(lockPin, HIGH);
   /*Updating the global puzzle state*/
-  puzzleState = Running;
+//  puzzleState = Running;
   /*NEW! Publish a message to MQTT borker*/
-  publish("Cover up puzzle unsolved!");
+//  publish("Cover up puzzle unsolved!");
 }
 /************************************************************************/
 
 /**************************onSolved Function*****************************/
 void onSolve() {
- #ifdef DEBUG
-    Serial.println("Puzzle has just been solved!");
- #endif
+// #ifdef DEBUG
+//    Serial.println("Puzzle has just been solved!");
+// #endif
 
   /*Release the lock*/
-  digitalWrite(lockPin, LOW);
+//  digitalWrite(lockPin, LOW);
   /*Updating the global puzzle state*/
-  puzzleState = Solved;
+//  puzzleState = Solved;
   /*NEW! Publish a message to MQTT borker*/
-  publish("Cover up puzzle solved!");
+//  publish("Cover up puzzle solved!");
 }
 /*************************************************************************/
 
@@ -475,5 +491,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
       if(strcmp(msg,"BulbON") == 0) {
         digitalWrite(LED_Pin,HIGH);
       }
+
+      /*For Button pressed from Dashboard*/
+      if(strcmp(msg,"ButtonPressed") == 0) {
+        digitalWrite(Buzzer,HIGH);
+      }
+      if(strcmp(msg,"ButtonNP") == 0) {
+        digitalWrite(Buzzer,LOW);
+      }
+
 }
 /********************************************************************************/
