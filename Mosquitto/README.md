@@ -12,20 +12,49 @@
 ```bash
 sudo apt install mosquitto
 sudo apt-get install mosquitto-clients # Optional
+touch mqtt.txt # Any user file with .txt on home directory.
 ```
+- Create the ".txt" file on home directory and 
+
+```bash
+cdac@ubuntu:~$ pwd
+#/home/cdac
+cdac@ubuntu:~$ touch mqtt.txt
+```
+- Write the following lines inside .txt file
+
+```bash
+nano mqtt.txt
+# Write these lines 
+listener 1883
+allow_anonymous true
+```
+
 - Start the brocker
 
 ```bash 
+# 
 sudo systemctl enable mosquitto.services
-mosquitto -c user_file.txt -v 
+# Check status
+sudo systemclt status mosquitto.services
+mosquitto -c mqtt.txt -v 
 ```
 
+- If Mosquitto broker is not running, restart it.
+
+```bash
+# If not starting run these commands
+sudo systemctl stop mosquitto.services
+mosquitto -c mqtt.txt -v
+```
+
+
 ### 2. MQTT Publisher
-- On Raspberry Pi 
+- On Raspberry Pi or on Ubuntu
 - Command to install mosquitto 
 
 ```bash
-sudo apt-get install mosquitto
+sudo apt-get install mosquitto # optional
 sudo apt-get install mosquitto-clients
 ```
 - Now start sending data 
