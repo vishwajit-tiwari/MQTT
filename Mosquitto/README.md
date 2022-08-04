@@ -12,7 +12,6 @@
 ```bash
 sudo apt install mosquitto
 sudo apt-get install mosquitto-clients # Optional
-touch mqtt.txt # Any user file with .txt on home directory.
 ```
 - Create the ".txt" file on home directory and 
 
@@ -33,10 +32,11 @@ allow_anonymous true
 - Start the brocker
 
 ```bash 
-# 
-sudo systemctl enable mosquitto.services
+# To enable Mosquitto 
+sudo systemctl enable mosquitto.service
 # Check status
-sudo systemclt status mosquitto.services
+sudo systemclt status mosquitto.service
+# Run Mosquitto Broker
 mosquitto -c mqtt.txt -v 
 ```
 
@@ -44,7 +44,10 @@ mosquitto -c mqtt.txt -v
 
 ```bash
 # If not starting run these commands
-sudo systemctl stop mosquitto.services
+sudo systemctl stop mosquitto.service
+# Check Status
+sudo systemctl status mosquitto.service
+# Run Broker
 mosquitto -c mqtt.txt -v
 ```
 
@@ -68,7 +71,7 @@ mosquitto_pub -h 192.168.43.75 -t test -m "Hello from Raspberry Pi" # ip of broc
 - Command to install mosquitto 
 
 ```bash
-sudo apt-get install mosquitto
+sudo apt-get install mosquitto # Optional
 sudo apt-get install mosquitto-clients
 ```
 - Now start receiving data 
@@ -86,8 +89,7 @@ mosquitto_sub -h 192.168.43.75 -t test # ip of Brocker
   - topic: test
 
 - Save all these details
-- Now we have enter topic name: test
-
+- Now we have to enter topic name: test
 
 ### For More info 
 [mosquitto_Auth](https://mosquitto.org/documentation/authentication-methods/)
