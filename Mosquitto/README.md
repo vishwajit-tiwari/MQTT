@@ -50,7 +50,13 @@ sudo systemctl status mosquitto.service
 # Run Broker
 mosquitto -c mqtt.txt -v
 ```
+![Start Broker](https://tinypic.host/images/2022/08/04/Screenshot-from-2022-08-04-10-34-33.png "How to start Broker")
 
+**Note:** 
+1. Always use "ctrl+c" to stop broker
+2. Don't use "ctrl+x" or "ctrl+z" 
+
+![To Stop Broker](https://tinypic.host/images/2022/08/04/Screenshot-from-2022-08-04-11-15-45.png)
 
 ### 2. MQTT Publisher
 - On Raspberry Pi or on Ubuntu
@@ -65,6 +71,7 @@ sudo apt-get install mosquitto-clients
 ```bash 
 mosquitto_pub -h 192.168.43.75 -t test -m "Hello from Raspberry Pi" # ip of brocker
 ```
+![How to Publish](https://tinypic.host/images/2022/08/04/Screenshot-from-2022-08-04-11-32-20.png)
 
 ### 3. MQTT Subscriber
 - On other Raspberry Pi or Ubuntu terminals
@@ -79,6 +86,8 @@ sudo apt-get install mosquitto-clients
 ```bash
 mosquitto_sub -h 192.168.43.75 -t test # ip of Brocker
 ```
+
+![How to Subscribe](https://tinypic.host/images/2022/08/04/Screenshot-from-2022-08-04-11-26-43.png)
 
 ### MQTT Dashboard (Mobile Application)
 - Enter the details of your brocker
