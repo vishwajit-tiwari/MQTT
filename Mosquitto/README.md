@@ -5,7 +5,7 @@
 2. MQTT Publisher
 3. MQTT Subscriber
 
-### 1. MQTT Brocker
+### 1. MQTT Brocker (Linux or Raspberry PI 4)
 - On either Ubuntu or on Raspberry Pi
 - Command to install mosquitto brocker
 
@@ -13,6 +13,31 @@
 sudo apt install mosquitto
 sudo apt-get install mosquitto-clients # Optional
 ```
+
+### MQTT Broker on Windows
+
+- Intall through the link https://mosquitto.org/download/
+- after successfull installation open command prompt (cmd) in privilleged mode (run as Administrator).
+
+ - To start broker follow the below command
+
+```bash
+netstat start mosquitto   # Another method
+mosquitto -v              # for localhost run
+mosquitto -v -c testMQTT.conf # for ip based run
+```
+ - To start subscriber 
+ 
+ ```bash
+mosquitto_sub -h localhost/ip-add -t topic/test/#  -d
+ ```
+
+ - To start publisher
+
+ ```bash
+ mosquitto_pub -h localhost/ip-add -t topic/test/sensordata -m "message to be sent temp:40" -r -i client -d
+ ```
+
 - Create the ".txt" file on home directory and 
 
 ```bash
